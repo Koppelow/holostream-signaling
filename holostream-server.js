@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const https = require('https');
+const fs = require('fs');
 
 const server = https.createServer({
   key: fs.readFileSync('path/to/key.pem'),

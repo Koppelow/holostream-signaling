@@ -1,43 +1,21 @@
 const WebSocket = require('ws');
-const fs = require('fs');
-const https = require('https');
+const http = require('http');
 
-const server = https.createServer({
-  key: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
-});
+const server = http.createServer(); // no HTTPS; Nginx handles TLS
 
-server.on("upgrade", (req, socket, head) => {
-  console.log("🔄 Upgrade request URL:", req.url);
-});
-
-
+// Two signaling paths
 const wss1 = new WebSocket.Server({ server, path: '/holostream' });
 const wss2 = new WebSocket.Server({ server, path: '/holostream2' });
 
 [wss1, wss2].forEach((wss, i) => {
   wss.on('connection', socket => {
-    console.log(`🔌 Client connected to ${i === 0 ? '/holostream' : '/holostream2'}`);
+    console.log(`Client connected to ${i === 0 ? '/holostream' : '/holostream2'}`);
 
     socket.on('message', message => {
       let data;
-      try {
-        data = JSON.parse(message);
-      } catch (e) {
-        console.error('❌ Failed to parse message:', message);
-        return;
-      }
+      try { data = JSON.parse(message); } catch { return; }
 
-      console.log('📨 Message:', data);
-
-      // Cache & broadcast
-      if (data.type === 'offer') {
-        lastOffer = data;
-        lastCandidates = [];
-      } else if (data.type === 'candidate') {
-        lastCandidates.push(data);
-      }
-
+      // Broadcast to all other clients
       wss.clients.forEach(client => {
         if (client !== socket && client.readyState === WebSocket.OPEN) {
           client.send(message);
@@ -45,14 +23,8 @@ const wss2 = new WebSocket.Server({ server, path: '/holostream2' });
       });
     });
 
-    socket.on('close', () => {
-      console.log('❌ Client disconnected');
-    });
+    socket.on('close', () => console.log('Client disconnected'));
   });
 });
 
-server.listen(3003, () => {
-  console.log('🚀 WebSocket signaling server running at:');
-  console.log('   wss://koppelow.com:3003/holostream');
-  console.log('   wss://koppelow.com:3003/holostream2');
-});
+server.listen(3003, '127.0.0.1', () => console.log('WebSocket server listening on 3003'));

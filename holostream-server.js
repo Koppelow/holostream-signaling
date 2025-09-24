@@ -22,4 +22,4 @@ const wss2 = new WebSocket.Server({ server, path: '/holostream2' });
   });
 });
 
-server.listen(3003, '127.0.0.1', () => console.log('Listening on 3003'));
+server.listen(3003, () => console.log('Listening on 3003'));

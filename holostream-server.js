@@ -7,6 +7,11 @@ const server = https.createServer({
   cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
 });
 
+server.on("upgrade", (req, socket, head) => {
+  console.log("🔄 Upgrade request URL:", req.url);
+});
+
+
 const wss1 = new WebSocket.Server({ server, path: '/holostream' });
 const wss2 = new WebSocket.Server({ server, path: '/holostream2' });
 

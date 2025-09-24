@@ -2,40 +2,54 @@ const https = require('https');
 const fs = require('fs');
 const WebSocket = require('ws');
 
-// Create HTTPS server with your SSL certificates
-const server = https.createServer({
+// SSL certificates
+const sslOptions = {
   key: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/privkey.pem'),
   cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
-});
+};
 
-// Define channels
-const channels = [
-  { path: '/holostream', name: 'holostream' },
-  { path: '/holostream2', name: 'holostream2' },
-];
+// --- Channel 1: /holostream ---
+const server1 = https.createServer(sslOptions);
+const wss1 = new WebSocket.Server({ server: server1, path: '/holostream' });
 
-// Create WebSocket servers for each channel
-channels.forEach(ch => {
-  const wss = new WebSocket.Server({ server, path: ch.path });
+wss1.on('connection', socket => {
+  console.log('🔌 Client connected to /holostream');
 
-  wss.on('connection', socket => {
-    console.log(`🔌 Client connected to ${ch.name}`);
-
-    // Broadcast messages to all other clients in this channel
-    socket.on('message', message => {
-      wss.clients.forEach(client => {
-        if (client !== socket && client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        }
-      });
+  socket.on('message', message => {
+    // Broadcast to all other clients in this channel
+    wss1.clients.forEach(client => {
+      if (client !== socket && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
     });
-
-    socket.on('close', () => console.log(`❌ Client disconnected from ${ch.name}`));
   });
+
+  socket.on('close', () => console.log('❌ Client disconnected from /holostream'));
 });
 
-// Start HTTPS/WSS server
-server.listen(3003, () => {
-  console.log('🚀 WebSocket server running:');
-  channels.forEach(ch => console.log(` - wss://koppelow.com:3003${ch.path}`));
+server1.listen(3003, () => {
+  console.log('🚀 Channel 1 running at wss://koppelow.com:3003/holostream');
+});
+
+// --- Channel 2: /holostream2 ---
+const server2 = https.createServer(sslOptions);
+const wss2 = new WebSocket.Server({ server: server2, path: '/holostream2' });
+
+wss2.on('connection', socket => {
+  console.log('🔌 Client connected to /holostream2');
+
+  socket.on('message', message => {
+    // Broadcast to all other clients in this channel
+    wss2.clients.forEach(client => {
+      if (client !== socket && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  });
+
+  socket.on('close', () => console.log('❌ Client disconnected from /holostream2'));
+});
+
+server2.listen(3004, () => {
+  console.log('🚀 Channel 2 running at wss://koppelow.com:3004/holostream2');
 });

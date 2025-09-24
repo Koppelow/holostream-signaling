@@ -8,25 +8,34 @@ const server = https.createServer({
   cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
 });
 
-// WebSocket server for /holostream only
-const wss = new WebSocket.Server({ server, path: '/holostream' });
+// Define channels
+const channels = [
+  { path: '/holostream', name: 'holostream' },
+  { path: '/holostream2', name: 'holostream2' },
+];
 
-wss.on('connection', socket => {
-  console.log('🔌 Client connected to /holostream');
+// Create WebSocket servers for each channel
+channels.forEach(ch => {
+  const wss = new WebSocket.Server({ server, path: ch.path });
 
-  // Broadcast messages to all other clients
-  socket.on('message', message => {
-    wss.clients.forEach(client => {
-      if (client !== socket && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
+  wss.on('connection', socket => {
+    console.log(`🔌 Client connected to ${ch.name}`);
+
+    // Broadcast messages to all other clients in this channel
+    socket.on('message', message => {
+      wss.clients.forEach(client => {
+        if (client !== socket && client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      });
     });
-  });
 
-  socket.on('close', () => console.log('❌ Client disconnected from /holostream'));
+    socket.on('close', () => console.log(`❌ Client disconnected from ${ch.name}`));
+  });
 });
 
-// Start server
+// Start HTTPS/WSS server
 server.listen(3003, () => {
-  console.log('🚀 WebSocket server running at wss://koppelow.com:3003/holostream');
+  console.log('🚀 WebSocket server running:');
+  channels.forEach(ch => console.log(` - wss://koppelow.com:3003${ch.path}`));
 });

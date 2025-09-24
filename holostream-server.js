@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
-const http = require('http');
+const https = require('https');
 
-const server = http.createServer();
+const server = https.createServer();
 
 // Two signaling paths
 const wss1 = new WebSocket.Server({ server, path: '/holostream' });

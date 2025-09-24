@@ -1,7 +1,10 @@
 const WebSocket = require('ws');
 const http = require('http');
 
-const server = http.createServer(); // no HTTPS; Nginx handles TLS
+const server = https.createServer({
+  key: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
+});
 
 // Two signaling paths
 const wss1 = new WebSocket.Server({ server, path: '/holostream' });

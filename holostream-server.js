@@ -1,7 +1,11 @@
-const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const WebSocket = require('ws');
 
-const server = http.createServer();
+const server = https.createServer({
+  key: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/koppelow.com/fullchain.pem'),
+});
 
 const wss1 = new WebSocket.Server({ server, path: '/holostream' });
 const wss2 = new WebSocket.Server({ server, path: '/holostream2' });
